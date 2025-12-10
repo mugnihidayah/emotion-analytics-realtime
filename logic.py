@@ -104,7 +104,7 @@ class cnn_model(nn.Module):
 class EmotionAnalyzer:
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        print(f"🚀 Logic loaded on: {self.device}")
+        print(f"Logic loaded on: {self.device}")
 
         # Load Models
         self.yolo = YOLO("./models/best.pt")

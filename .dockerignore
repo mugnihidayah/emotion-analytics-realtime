@@ -1,0 +1,16 @@
+venv/
+env/
+.venv/
+
+.git/
+.gitignore
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+Dockerfile
+.dockerignore
+
+training/
