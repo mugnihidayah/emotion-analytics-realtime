@@ -1,0 +1,79 @@
+name: Deploy Backend to HF Spaces
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-hf.yml'
+
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Deploy backend to Hugging Face Spaces
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          # ── Configure git ──
+          git config --global user.name "mugnihidayah"
+          git config --global user.email "mugnihidayah11@gmail.com"
+
+          # ── Prepare a clean temp directory with backend contents ──
+          DEPLOY_DIR=$(mktemp -d)
+          cp -r backend/* "$DEPLOY_DIR/"
+
+          # ── Create HF Spaces README with YAML metadata ──
+          cat > "$DEPLOY_DIR/README.md" << 'EOF'
+          ---
+          title: Emotion Analytics API
+          emoji: 🧠
+          colorFrom: blue
+          colorTo: purple
+          sdk: docker
+          app_port: 7860
+          ---
+
+          # Emotion Analytics API
+
+          Real-time facial emotion recognition backend powered by YOLOv8 + ResNet-SE CNN.
+
+          ## Endpoints
+
+          - `GET /` — Health check
+          - `GET /api/health` — Model status & device info
+          - `WebSocket /ws/emotion` — Real-time emotion inference
+
+          ## Protocol
+
+          Send base64-encoded JPEG frames via WebSocket, receive JSON:
+
+          ```json
+          {
+            "emotion": "Happy",
+            "score": 78.5,
+            "bbox": [120, 80, 280, 320],
+            "probabilities": {"Happy": 0.72, "Neutral": 0.15, ...}
+          }
+          ```
+          EOF
+
+          # Fix indentation from heredoc
+          sed -i 's/^          //' "$DEPLOY_DIR/README.md"
+
+          # ── Initialize git repo and push to HF Spaces ──
+          cd "$DEPLOY_DIR"
+          git init
+          git add .
+          git commit -m "Deploy backend from GitHub Actions ($(date -u +%Y-%m-%dT%H:%M:%SZ))"
+          git remote add hf https://mugnihidayah:$HF_TOKEN@huggingface.co/spaces/mugnihidayah/emotion-analytics-api
+          git push --force hf main
