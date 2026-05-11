@@ -83,7 +83,7 @@ async def websocket_emotion(websocket: WebSocket):
     WebSocket endpoint for real-time emotion inference.
 
     Protocol:
-    - Client sends: base64-encoded JPEG frame (text message)
+    - Client sends: JPEG frame bytes, or base64-encoded JPEG as a legacy fallback
     - Server responds: JSON with emotion, score, bbox, probabilities
     """
     await websocket.accept()
@@ -96,15 +96,23 @@ async def websocket_emotion(websocket: WebSocket):
 
     try:
         while True:
-            # Receive base64 frame from client
-            data = await websocket.receive_text()
+            message = await websocket.receive()
+            if message["type"] == "websocket.disconnect":
+                break
 
-            # Strip data URL prefix if present (e.g. "data:image/jpeg;base64,...")
-            if "," in data:
-                data = data.split(",", 1)[1]
+            frame_bytes = message.get("bytes")
+            frame_text = message.get("text")
 
             # Run inference in thread pool to avoid blocking event loop
-            result = await asyncio.to_thread(analyzer.process_base64_frame, data)
+            if frame_bytes is not None:
+                result = await asyncio.to_thread(analyzer.process_jpeg_bytes, frame_bytes)
+            elif frame_text is not None:
+                # Strip data URL prefix if present (e.g. "data:image/jpeg;base64,...")
+                if "," in frame_text:
+                    frame_text = frame_text.split(",", 1)[1]
+                result = await asyncio.to_thread(analyzer.process_base64_frame, frame_text)
+            else:
+                continue
 
             # Send result back
             await websocket.send_text(json.dumps(result))

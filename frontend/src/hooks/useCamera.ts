@@ -8,7 +8,7 @@ interface UseCameraOptions {
   width?: number;
   height?: number;
   shouldCapture?: () => boolean;
-  onFrame?: (base64: string) => void;
+  onFrame?: (frame: Blob) => void;
 }
 
 export function useCamera({
@@ -26,6 +26,7 @@ export function useCamera({
   const streamRef = useRef<MediaStream | null>(null);
   const onFrameRef = useRef(onFrame);
   const shouldCaptureRef = useRef(shouldCapture);
+  const encodingRef = useRef(false);
 
   // Keep onFrame ref current to avoid stale closures in setInterval
   useEffect(() => {
@@ -56,6 +57,7 @@ export function useCamera({
 
       // Frame capture loop
       intervalRef.current = setInterval(() => {
+        if (encodingRef.current) return;
         if (shouldCaptureRef.current && !shouldCaptureRef.current()) return;
         if (!videoRef.current) return;
 
@@ -74,9 +76,17 @@ export function useCamera({
         ctx.drawImage(video, -captureCanvas.width, 0, captureCanvas.width, captureCanvas.height);
         ctx.restore();
 
-        // Convert to base64 JPEG
-        const base64 = captureCanvas.toDataURL('image/jpeg', quality);
-        onFrameRef.current?.(base64);
+        encodingRef.current = true;
+        captureCanvas.toBlob(
+          (blob) => {
+            encodingRef.current = false;
+            if (!blob) return;
+            if (shouldCaptureRef.current && !shouldCaptureRef.current()) return;
+            onFrameRef.current?.(blob);
+          },
+          'image/jpeg',
+          quality
+        );
       }, 1000 / fps);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Camera access denied';
@@ -86,6 +96,8 @@ export function useCamera({
   }, [fps, quality, width, height]);
 
   const stop = useCallback(() => {
+    encodingRef.current = false;
+
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
@@ -104,6 +116,7 @@ export function useCamera({
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      encodingRef.current = false;
       if (intervalRef.current) clearInterval(intervalRef.current);
       streamRef.current?.getTracks().forEach((track) => track.stop());
     };

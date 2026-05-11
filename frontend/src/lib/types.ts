@@ -5,6 +5,7 @@ export interface EmotionResult {
   score: number;
   bbox: [number, number, number, number] | null;
   probabilities: Record<string, number> | null;
+  inference_ms?: number;
 }
 
 export type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'disconnected' | 'error';

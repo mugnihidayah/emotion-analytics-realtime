@@ -7,6 +7,7 @@ interface StatusIndicatorProps {
   wsStatus: ConnectionStatus;
   device: string | null;
   cameraActive: boolean;
+  inferenceMs?: number;
 }
 
 const STATUS_LABELS: Record<ConnectionStatus, string> = {
@@ -17,7 +18,12 @@ const STATUS_LABELS: Record<ConnectionStatus, string> = {
   error: 'Connection error',
 };
 
-export default function StatusIndicator({ wsStatus, device, cameraActive }: StatusIndicatorProps) {
+export default function StatusIndicator({
+  wsStatus,
+  device,
+  cameraActive,
+  inferenceMs,
+}: StatusIndicatorProps) {
   const dotClass =
     wsStatus === 'connected'
       ? 'connected'
@@ -31,7 +37,8 @@ export default function StatusIndicator({ wsStatus, device, cameraActive }: Stat
       <span>{STATUS_LABELS[wsStatus]}</span>
       <span style={{ marginLeft: 'auto', opacity: 0.6 }}>
         {device ? `Device: ${device}` : ''}
-        {cameraActive ? ' • Camera active' : ''}
+        {cameraActive ? ' | Camera active' : ''}
+        {typeof inferenceMs === 'number' ? ` | Inference: ${Math.round(inferenceMs)}ms` : ''}
       </span>
     </div>
   );

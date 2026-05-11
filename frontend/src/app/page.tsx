@@ -10,7 +10,7 @@ import StatusIndicator from '@/components/StatusIndicator';
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:7860/ws/emotion';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:7860';
-const CAMERA_FPS = Number(process.env.NEXT_PUBLIC_CAMERA_FPS || 4);
+const CAMERA_FPS = Number(process.env.NEXT_PUBLIC_CAMERA_FPS || 24);
 const CAMERA_QUALITY = Number(process.env.NEXT_PUBLIC_CAMERA_QUALITY || 0.45);
 const CAMERA_WIDTH = Number(process.env.NEXT_PUBLIC_CAMERA_WIDTH || 480);
 const CAMERA_HEIGHT = Number(process.env.NEXT_PUBLIC_CAMERA_HEIGHT || 360);
@@ -39,8 +39,8 @@ export default function HomePage() {
 
   // Camera
   const handleFrame = useCallback(
-    (base64: string) => {
-      send(base64);
+    (frame: Blob) => {
+      send(frame);
     },
     [send]
   );
@@ -104,6 +104,7 @@ export default function HomePage() {
               wsStatus={wsStatus}
               device={device}
               cameraActive={cameraActive}
+              inferenceMs={latestResult?.inference_ms}
             />
           </div>
         </div>

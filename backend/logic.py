@@ -10,6 +10,7 @@ from torchvision import transforms
 from PIL import Image
 import base64
 import os
+import time
 
 # =====================================================
 #                 CNN ARCHITECTURE
@@ -121,6 +122,11 @@ class EmotionAnalyzer:
 
         # Load Models
         self.yolo = YOLO(yolo_path)
+        try:
+            self.yolo.to(self.device)
+            self.yolo.fuse()
+        except Exception as e:
+            print(f"[EmotionAnalyzer] YOLO optimization skipped: {e}")
 
         # Load CNN
         self.emotion_model = cnn_model(num_classes=7).to(self.device)
@@ -131,11 +137,17 @@ class EmotionAnalyzer:
             raise FileNotFoundError(f"CRITICAL: {cnn_path} not found!")
 
         self.emotion_model.eval()
+        if self.device.type == "cuda":
+            torch.backends.cudnn.benchmark = True
 
         self.labels = ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
 
         # History for probability smoothing
         self.prob_history = deque(maxlen=5)
+        self.frame_index = 0
+        self.last_bbox = None
+        self.detect_every_n = max(1, int(os.getenv("DETECT_EVERY_N", "5")))
+        self.yolo_imgsz = int(os.getenv("YOLO_IMGSZ", "416"))
 
         self.transform = transforms.Compose([
             transforms.Grayscale(1),
@@ -158,15 +170,33 @@ class EmotionAnalyzer:
     def process_frame(self, frame):
         """Core inference pipeline — takes BGR numpy array, returns (frame, emotion, score, bbox)"""
         small = cv2.resize(frame, (640, 480))
-        results = self.yolo(small, verbose=False, conf=0.5)
+        self.frame_index += 1
 
-        if len(results[0].boxes) == 0:
+        should_detect = self.last_bbox is None or self.frame_index % self.detect_every_n == 0
+
+        if should_detect:
+            results = self.yolo(
+                small,
+                verbose=False,
+                conf=0.5,
+                imgsz=self.yolo_imgsz,
+                device=self.device.type,
+                half=self.device.type == "cuda",
+            )
+
+            if len(results[0].boxes) == 0:
+                self.last_bbox = None
+                return small, "No Face", 0.0, None, None
+
+            boxes = results[0].boxes.xyxy.cpu().numpy()
+            areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
+            idx = np.argmax(areas)
+            self.last_bbox = tuple(boxes[idx].astype(int))
+
+        if self.last_bbox is None:
             return small, "No Face", 0.0, None, None
 
-        boxes = results[0].boxes.xyxy.cpu().numpy()
-        areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
-        idx = np.argmax(areas)
-        x1, y1, x2, y2 = boxes[idx].astype(int)
+        x1, y1, x2, y2 = self.last_bbox
 
         # Padding & Boundary Check
         h, w, _ = small.shape
@@ -175,6 +205,7 @@ class EmotionAnalyzer:
 
         roi = small[y1:y2, x1:x2]
         if roi.size == 0:
+            self.last_bbox = None
             return small, "No Face", 0.0, None, None
 
         # Preprocessing CNN
@@ -212,21 +243,35 @@ class EmotionAnalyzer:
         """
         try:
             # Decode base64 → bytes → numpy
-            img_bytes = base64.b64decode(base64_data)
+            return self.process_jpeg_bytes(base64.b64decode(base64_data))
+        except Exception as e:
+            print(f"[EmotionAnalyzer] Error processing base64 frame: {e}")
+            return {"emotion": "Error", "score": 0.0, "bbox": None, "probabilities": None, "inference_ms": 0.0}
+
+    def process_jpeg_bytes(self, img_bytes: bytes) -> dict:
+        """
+        Process JPEG bytes from WebSocket.
+        Returns a JSON-serializable dict.
+        """
+        start = time.perf_counter()
+
+        try:
             nparr = np.frombuffer(img_bytes, np.uint8)
             frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
             if frame is None:
-                return {"emotion": "Error", "score": 0.0, "bbox": None, "probabilities": None}
+                return {"emotion": "Error", "score": 0.0, "bbox": None, "probabilities": None, "inference_ms": 0.0}
 
             _, emotion, score, bbox, prob_dict = self.process_frame(frame)
+            inference_ms = (time.perf_counter() - start) * 1000
 
             return {
                 "emotion": emotion,
                 "score": round(score, 1),
                 "bbox": [int(v) for v in bbox] if bbox else None,
                 "probabilities": prob_dict,
+                "inference_ms": round(inference_ms, 1),
             }
         except Exception as e:
-            print(f"[EmotionAnalyzer] Error processing frame: {e}")
-            return {"emotion": "Error", "score": 0.0, "bbox": None, "probabilities": None}
+            print(f"[EmotionAnalyzer] Error processing frame bytes: {e}")
+            return {"emotion": "Error", "score": 0.0, "bbox": None, "probabilities": None, "inference_ms": 0.0}
