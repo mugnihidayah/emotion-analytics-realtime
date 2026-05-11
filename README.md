@@ -1,6 +1,6 @@
-# 🧠 Real-time Emotion Analytics Dashboard
+# Real-time Emotion Analytics Dashboard
 
-A production-grade, deep learning-powered system for **real-time facial emotion recognition** and **engagement analytics**. Built with a decoupled architecture — a premium **Next.js** frontend and a high-performance **FastAPI** backend — designed for deployment on **Vercel** + **Hugging Face Spaces**.
+A production-grade, deep learning-powered system for **real-time facial emotion recognition** and **engagement analytics**. Built with a decoupled architecture a premium **Next.js** frontend and a high-performance **FastAPI** backend, designed for deployment on **Vercel** + **Hugging Face Spaces**.
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)
@@ -12,7 +12,7 @@ A production-grade, deep learning-powered system for **real-time facial emotion 
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Overview](#overview)
 - [Key Features](#key-features)
@@ -46,15 +46,15 @@ All inference runs server-side via a **WebSocket connection**, while the browser
 
 | Feature | Description |
 |---------|-------------|
-| 🎯 **Real-time Inference** | Browser captures frames → WebSocket → YOLO + CNN → JSON response at ~8 FPS |
-| 📊 **Engagement Scoring** | Dynamic 0-100% score based on weighted emotion probabilities |
-| 📈 **Live Trend Chart** | Canvas-based sparkline with gradient fill showing engagement over time |
-| 🎨 **Premium UI** | Dark glassmorphism theme with micro-animations and gradient accents |
-| 🔲 **Smart Bounding Box** | Corner-style face detection overlay with color-coded engagement |
-| 📉 **Probability Distribution** | Real-time probability bars for all 7 emotion classes |
-| 🔄 **EMA Smoothing** | Exponential Moving Average eliminates prediction jitter |
-| 🔌 **Auto-Reconnect** | WebSocket with exponential backoff for resilient connections |
-| 📱 **Responsive Design** | Adapts seamlessly from desktop to mobile viewports |
+| **Real-time Inference** | Browser captures frames → WebSocket → YOLO + CNN → JSON response at ~8 FPS |
+| **Engagement Scoring** | Dynamic 0-100% score based on weighted emotion probabilities |
+| **Live Trend Chart** | Canvas-based sparkline with gradient fill showing engagement over time |
+| **Premium UI** | Dark glassmorphism theme with micro-animations and gradient accents |
+| **Smart Bounding Box** | Corner-style face detection overlay with color-coded engagement |
+| **Probability Distribution** | Real-time probability bars for all 7 emotion classes |
+| **EMA Smoothing** | Exponential Moving Average eliminates prediction jitter |
+| **Auto-Reconnect** | WebSocket with exponential backoff for resilient connections |
+| **Responsive Design** | Adapts seamlessly from desktop to mobile viewports |
 
 ---
 
