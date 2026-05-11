@@ -10,6 +10,10 @@ import StatusIndicator from '@/components/StatusIndicator';
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:7860/ws/emotion';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:7860';
+const CAMERA_FPS = Number(process.env.NEXT_PUBLIC_CAMERA_FPS || 4);
+const CAMERA_QUALITY = Number(process.env.NEXT_PUBLIC_CAMERA_QUALITY || 0.45);
+const CAMERA_WIDTH = Number(process.env.NEXT_PUBLIC_CAMERA_WIDTH || 480);
+const CAMERA_HEIGHT = Number(process.env.NEXT_PUBLIC_CAMERA_HEIGHT || 360);
 
 export default function HomePage() {
   const [latestResult, setLatestResult] = useState<EmotionResult | null>(null);
@@ -28,7 +32,7 @@ export default function HomePage() {
     });
   }, []);
 
-  const { status: wsStatus, connect, disconnect: wsDisconnect, send } = useWebSocket({
+  const { status: wsStatus, connect, disconnect: wsDisconnect, send, canSend } = useWebSocket({
     url: WS_URL,
     onMessage: handleMessage,
   });
@@ -43,8 +47,11 @@ export default function HomePage() {
 
   const { videoRef, isActive: cameraActive, error: cameraError, start: startCamera, stop: stopCamera } =
     useCamera({
-      fps: 8,
-      quality: 0.65,
+      fps: CAMERA_FPS,
+      quality: CAMERA_QUALITY,
+      width: CAMERA_WIDTH,
+      height: CAMERA_HEIGHT,
+      shouldCapture: canSend,
       onFrame: handleFrame,
     });
 

@@ -5,28 +5,40 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 interface UseCameraOptions {
   fps?: number;
   quality?: number;
+  width?: number;
+  height?: number;
+  shouldCapture?: () => boolean;
   onFrame?: (base64: string) => void;
 }
 
-export function useCamera({ fps = 8, quality = 0.6, onFrame }: UseCameraOptions = {}) {
+export function useCamera({
+  fps = 4,
+  quality = 0.45,
+  width = 480,
+  height = 360,
+  shouldCapture,
+  onFrame,
+}: UseCameraOptions = {}) {
   const [isActive, setIsActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const onFrameRef = useRef(onFrame);
+  const shouldCaptureRef = useRef(shouldCapture);
 
   // Keep onFrame ref current to avoid stale closures in setInterval
   useEffect(() => {
     onFrameRef.current = onFrame;
-  }, [onFrame]);
+    shouldCaptureRef.current = shouldCapture;
+  }, [onFrame, shouldCapture]);
 
   const start = useCallback(async () => {
     try {
       setError(null);
 
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+        video: { width: { ideal: width }, height: { ideal: height }, facingMode: 'user' },
         audio: false,
       });
 
@@ -44,6 +56,7 @@ export function useCamera({ fps = 8, quality = 0.6, onFrame }: UseCameraOptions 
 
       // Frame capture loop
       intervalRef.current = setInterval(() => {
+        if (shouldCaptureRef.current && !shouldCaptureRef.current()) return;
         if (!videoRef.current) return;
 
         const video = videoRef.current;
@@ -70,7 +83,7 @@ export function useCamera({ fps = 8, quality = 0.6, onFrame }: UseCameraOptions 
       setError(msg);
       console.error('[Camera]', msg);
     }
-  }, [fps, quality]);
+  }, [fps, quality, width, height]);
 
   const stop = useCallback(() => {
     if (intervalRef.current) {
