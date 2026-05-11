@@ -1,15 +1,19 @@
-# logic.py
+# logic.py — Emotion Analyzer (FastAPI Backend)
 import cv2
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from ultralytics import YOLO # type: ignore
+from ultralytics import YOLO  # type: ignore
 from collections import deque
 from torchvision import transforms
 from PIL import Image
+import base64
+import os
 
-# CNN ARCHITECTURE
+# =====================================================
+#                 CNN ARCHITECTURE
+# =====================================================
 
 class SEBlock(nn.Module):
     def __init__(self, channel, reduction=16):
@@ -27,6 +31,7 @@ class SEBlock(nn.Module):
         y = self.avg_pool(x).view(b, c)
         y = self.fc(y).view(b, c, 1, 1)
         return x * y.expand_as(x)
+
 
 class ResidualSEBlock(nn.Module):
     """Residual Block integrated with SE Block"""
@@ -46,7 +51,7 @@ class ResidualSEBlock(nn.Module):
                 nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False),
                 nn.BatchNorm2d(out_channels),
             )
-    
+
     def forward(self, x):
         out = self.main_path(x)
         out = self.se(out)
@@ -99,36 +104,44 @@ class cnn_model(nn.Module):
         x = self.classifier(x)
         return x
 
-# EMOTION ANALYZER
+
+# =====================================================
+#                EMOTION ANALYZER
+# =====================================================
 
 class EmotionAnalyzer:
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        print(f"Logic loaded on: {self.device}")
+        print(f"[EmotionAnalyzer] Device: {self.device}")
+
+        # Resolve model paths relative to this file
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        yolo_path = os.path.join(base_dir, "models", "best.pt")
+        cnn_path = os.path.join(base_dir, "models", "model_cnn.pth")
 
         # Load Models
-        self.yolo = YOLO("./models/best.pt")
-        
+        self.yolo = YOLO(yolo_path)
+
         # Load CNN
         self.emotion_model = cnn_model(num_classes=7).to(self.device)
         try:
-            weights = torch.load("./models/model_cnn.pth", map_location=self.device)
+            weights = torch.load(cnn_path, map_location=self.device)
             self.emotion_model.load_state_dict(weights)
         except FileNotFoundError:
-            raise FileNotFoundError("CRITICAL: ./models/model_cnn.pth not found!")
-            
+            raise FileNotFoundError(f"CRITICAL: {cnn_path} not found!")
+
         self.emotion_model.eval()
 
-        self.labels = ['Angry','Disgust','Fear','Happy','Neutral','Sad','Surprise']
-        
+        self.labels = ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
+
         # History for probability smoothing
         self.prob_history = deque(maxlen=5)
 
         self.transform = transforms.Compose([
             transforms.Grayscale(1),
-            transforms.Resize((48,48)),
+            transforms.Resize((48, 48)),
             transforms.ToTensor(),
-            transforms.Normalize((0.5,),(0.5,))
+            transforms.Normalize((0.5,), (0.5,))
         ])
 
         # Engagement Weight
@@ -143,32 +156,32 @@ class EmotionAnalyzer:
         ])
 
     def process_frame(self, frame):
-        small = cv2.resize(frame, (640,480))
+        """Core inference pipeline — takes BGR numpy array, returns (frame, emotion, score, bbox)"""
+        small = cv2.resize(frame, (640, 480))
         results = self.yolo(small, verbose=False, conf=0.5)
 
         if len(results[0].boxes) == 0:
-            return small, "No Face", 0.0, None
+            return small, "No Face", 0.0, None, None
 
         boxes = results[0].boxes.xyxy.cpu().numpy()
-        areas = (boxes[:,2]-boxes[:,0])*(boxes[:,3]-boxes[:,1])
+        areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
         idx = np.argmax(areas)
-        x1,y1,x2,y2 = boxes[idx].astype(int)
+        x1, y1, x2, y2 = boxes[idx].astype(int)
 
         # Padding & Boundary Check
-        h,w,_ = small.shape
-        x1,y1 = max(0,x1), max(0,y1)
-        x2,y2 = min(w,x2), min(h,y2)
+        h, w, _ = small.shape
+        x1, y1 = max(0, x1), max(0, y1)
+        x2, y2 = min(w, x2), min(h, y2)
 
         roi = small[y1:y2, x1:x2]
         if roi.size == 0:
-            return small, "No Face", 0.0, None
+            return small, "No Face", 0.0, None, None
 
         # Preprocessing CNN
         gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-        
         img = cv2.cvtColor(gray, cv2.COLOR_GRAY2RGB)
         pil = Image.fromarray(img)
-        tensor = self.transform(pil).unsqueeze(0).to(self.device) # type: ignore
+        tensor = self.transform(pil).unsqueeze(0).to(self.device)  # type: ignore
 
         # Inference
         with torch.no_grad():
@@ -185,6 +198,35 @@ class EmotionAnalyzer:
 
         # Calculate Real Engagement Score (0 - 100)
         raw_score = np.sum(avg_probs * self.engagement_weights)
-        final_score = np.clip(raw_score * 100, 0, 100)
+        final_score = float(np.clip(raw_score * 100, 0, 100))
 
-        return small, emotion, final_score, (x1,y1,x2,y2)
+        # Probabilities dict
+        prob_dict = {label: float(p) for label, p in zip(self.labels, avg_probs)}
+
+        return small, emotion, final_score, (x1, y1, x2, y2), prob_dict
+
+    def process_base64_frame(self, base64_data: str) -> dict:
+        """
+        Process a base64-encoded JPEG frame from WebSocket.
+        Returns a JSON-serializable dict.
+        """
+        try:
+            # Decode base64 → bytes → numpy
+            img_bytes = base64.b64decode(base64_data)
+            nparr = np.frombuffer(img_bytes, np.uint8)
+            frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+            if frame is None:
+                return {"emotion": "Error", "score": 0.0, "bbox": None, "probabilities": None}
+
+            _, emotion, score, bbox, prob_dict = self.process_frame(frame)
+
+            return {
+                "emotion": emotion,
+                "score": round(score, 1),
+                "bbox": [int(v) for v in bbox] if bbox else None,
+                "probabilities": prob_dict,
+            }
+        except Exception as e:
+            print(f"[EmotionAnalyzer] Error processing frame: {e}")
+            return {"emotion": "Error", "score": 0.0, "bbox": None, "probabilities": None}

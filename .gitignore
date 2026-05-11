@@ -1,3 +1,7 @@
+# ======================
+# Python
+# ======================
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -24,13 +28,30 @@ wheels/
 .installed.cfg
 *.egg
 
-# Virtual Environments (JANGAN PERNAH UPLOAD INI)
+# Virtual Environments
 venv/
 env/
 ENV/
 .env
 .venv/
 
-# PyCharm / VS Code settings (Opsional, biar bersih)
+# IDE settings
 .idea/
 .vscode/
+
+# ======================
+# Node.js (Frontend)
+# ======================
+node_modules/
+.next/
+out/
+.env.local
+*.tsbuildinfo
+next-env.d.ts
+
+# ======================
+# OS & Misc
+# ======================
+.DS_Store
+Thumbs.db
+*.log

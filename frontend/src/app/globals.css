@@ -1,0 +1,522 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* =====================================================
+   DESIGN TOKENS
+   ===================================================== */
+
+:root {
+  /* Colors — Deep space dark theme */
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #111827;
+  --bg-card: rgba(17, 24, 39, 0.6);
+  --bg-card-hover: rgba(17, 24, 39, 0.8);
+  --bg-glass: rgba(255, 255, 255, 0.03);
+  --bg-glass-border: rgba(255, 255, 255, 0.08);
+
+  /* Accent */
+  --accent-primary: #06b6d4;
+  --accent-secondary: #8b5cf6;
+  --accent-glow: rgba(6, 182, 212, 0.15);
+  --accent-gradient: linear-gradient(135deg, #06b6d4, #8b5cf6);
+
+  /* Engagement colors */
+  --engage-high: #22c55e;
+  --engage-mid: #eab308;
+  --engage-low: #ef4444;
+
+  /* Text */
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-glass: rgba(255, 255, 255, 0.1);
+
+  /* Shadows */
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 0 40px rgba(6, 182, 212, 0.1);
+
+  /* Radius */
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 8px;
+
+  /* Spacing */
+  --gap: 24px;
+}
+
+
+/* =====================================================
+   RESET & BASE
+   ===================================================== */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: var(--bg-primary);
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(6, 182, 212, 0.04) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(139, 92, 246, 0.04) 0%, transparent 60%);
+  min-height: 100vh;
+}
+
+
+/* =====================================================
+   GLASS CARD
+   ===================================================== */
+
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-card:hover {
+  border-color: rgba(6, 182, 212, 0.15);
+  box-shadow: var(--shadow-card), var(--shadow-glow);
+}
+
+
+/* =====================================================
+   DASHBOARD LAYOUT
+   ===================================================== */
+
+.dashboard {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px 32px;
+  min-height: 100vh;
+}
+
+.dashboard-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.dashboard-header h1 {
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+
+.dashboard-header p {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: var(--gap);
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard {
+    padding: 16px;
+  }
+
+  .dashboard-header h1 {
+    font-size: 1.75rem;
+  }
+}
+
+
+/* =====================================================
+   CAMERA FEED
+   ===================================================== */
+
+.camera-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4/3;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #000;
+}
+
+.camera-container video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+.camera-container canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.camera-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.camera-placeholder .icon {
+  font-size: 3rem;
+  opacity: 0.5;
+}
+
+.camera-start-btn {
+  padding: 12px 32px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--accent-gradient);
+  color: white;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.camera-start-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(6, 182, 212, 0.3);
+}
+
+.camera-start-btn:active {
+  transform: translateY(0);
+}
+
+.camera-start-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+
+/* =====================================================
+   STATUS INDICATOR
+   ===================================================== */
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot.connected {
+  background: var(--engage-high);
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.status-dot.disconnected {
+  background: var(--engage-low);
+}
+
+.status-dot.connecting {
+  background: var(--engage-mid);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+
+/* =====================================================
+   ENGAGEMENT BAR
+   ===================================================== */
+
+.engagement-section {
+  padding: 20px;
+}
+
+.engagement-section h3 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.engagement-score {
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+  transition: color 0.4s ease;
+}
+
+.engagement-bar-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.engagement-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), background 0.4s ease;
+}
+
+.engagement-bar-fill.high {
+  background: linear-gradient(90deg, #22c55e, #4ade80);
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.3);
+}
+
+.engagement-bar-fill.mid {
+  background: linear-gradient(90deg, #eab308, #facc15);
+  box-shadow: 0 0 12px rgba(234, 179, 8, 0.3);
+}
+
+.engagement-bar-fill.low {
+  background: linear-gradient(90deg, #ef4444, #f87171);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
+}
+
+
+/* =====================================================
+   EMOTION DISPLAY
+   ===================================================== */
+
+.emotion-display {
+  padding: 20px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.emotion-display h3 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.emotion-current {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.emotion-emoji {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.emotion-label {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.emotion-prob-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.emotion-prob-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.78rem;
+}
+
+.emotion-prob-name {
+  width: 64px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.emotion-prob-bar-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.emotion-prob-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent-primary);
+  transition: width 0.3s ease;
+  opacity: 0.7;
+}
+
+.emotion-prob-bar-fill.active {
+  opacity: 1;
+  background: var(--accent-gradient);
+}
+
+.emotion-prob-value {
+  width: 36px;
+  text-align: right;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+
+/* =====================================================
+   SPARKLINE
+   ===================================================== */
+
+.sparkline-section {
+  padding: 20px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.sparkline-section h3 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.sparkline-canvas {
+  width: 100%;
+  height: 100px;
+  border-radius: var(--radius-sm);
+}
+
+
+/* =====================================================
+   ANALYTICS PANEL INFO
+   ===================================================== */
+
+.analytics-info {
+  padding: 20px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.analytics-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 0.82rem;
+}
+
+.analytics-info-row .label {
+  color: var(--text-muted);
+}
+
+.analytics-info-row .value {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+
+/* =====================================================
+   ANIMATIONS
+   ===================================================== */
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.loading-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+
+/* =====================================================
+   LIVE BADGE
+   ===================================================== */
+
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.live-badge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Tailwind overrides — remove default Next.js styles */
+@layer base {
+  a { color: inherit; text-decoration: none; }
+}

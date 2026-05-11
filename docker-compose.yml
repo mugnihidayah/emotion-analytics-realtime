@@ -1,11 +1,11 @@
 services:
-  app:
-    build: .
-    image: emotion-analytics:v1
+  backend:
+    build: ./backend
+    image: emotion-analytics-api:v2
     restart: unless-stopped
-    container_name: emotion-app
+    container_name: emotion-api
     ports:
-      - "8501:8501"
+      - "7860:7860"
 
     deploy:
       resources:
@@ -16,6 +16,21 @@ services:
               capabilities: [gpu]
 
     volumes:
-      - ./data:/app/data
+      - ./backend/data:/app/data
 
     tty: true
+
+  frontend:
+    build: ./frontend
+    image: emotion-analytics-ui:v2
+    restart: unless-stopped
+    container_name: emotion-ui
+    ports:
+      - "3000:3000"
+
+    environment:
+      - NEXT_PUBLIC_WS_URL=ws://backend:7860/ws/emotion
+      - NEXT_PUBLIC_API_URL=http://backend:7860
+
+    depends_on:
+      - backend
