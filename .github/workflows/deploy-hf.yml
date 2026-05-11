@@ -70,9 +70,13 @@ jobs:
           # Fix indentation from heredoc
           sed -i 's/^          //' "$DEPLOY_DIR/README.md"
 
-          # ── Initialize git repo and push to HF Spaces ──
+          # ── Initialize git repo with LFS and push to HF Spaces ──
           cd "$DEPLOY_DIR"
           git init -b main
+          git lfs install
+          git lfs track "*.pt"
+          git lfs track "*.pth"
+          git add .gitattributes
           git add .
           git commit -m "Deploy backend from GitHub Actions ($(date -u +%Y-%m-%dT%H:%M:%SZ))"
           git remote add hf https://mugnihidayah:$HF_TOKEN@huggingface.co/spaces/mugnihidayah/emotion-analytics-api
